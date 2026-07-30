@@ -1,0 +1,163 @@
+openapi: 3.1.0
+info:
+  title: Chat App API
+  description: Authentication and chat endpoints
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: auth
+    description: Authentication
+  - name: app
+    description: Health
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SignUpDto:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 20
+          pattern: '^[a-zA-Z0-9_]+$'
+          example: shaked
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          example: changeme1
+
+    SignInDto:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: shaked
+        password:
+          type: string
+          format: password
+          example: changeme1
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    JwtPayload:
+      type: object
+      properties:
+        sub:
+          type: string
+          description: User id (cuid)
+          example: cms7m9fdn0000bkijgwldevf6
+        username:
+          type: string
+          example: shaked
+        iat:
+          type: integer
+        exp:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items: { type: string }
+        error:
+          type: string
+        statusCode:
+          type: integer
+
+paths:
+  /:
+    get:
+      tags: [app]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema: { type: string, example: Hello World! }
+
+  /auth/signup:
+    post:
+      tags: [auth]
+      summary: Create an account and return an access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignUpDto' }
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Username already taken
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/signin:
+    post:
+      tags: [auth]
+      summary: Exchange credentials for an access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignInDto' }
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400':
+          description: Validation failed
+        '401':
+          description: Invalid credentials
+
+  /auth/profile:
+    get:
+      tags: [auth]
+      summary: Return the current token payload
+      responses:
+        '200':
+          description: Token payload
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JwtPayload' }
+        '401':
+          description: Missing or invalid token
+
+security:
+  - bearerAuth: []
