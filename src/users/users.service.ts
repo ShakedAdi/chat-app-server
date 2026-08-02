@@ -15,8 +15,8 @@ export class UsersService {
 
   create(username: string, passwordHash: string) {
     return this.prisma.user.create({
-      data: { username, passwordHash },
-      select: { id: true, username: true, createdAt: true },
+      data: { username, displayName: username, passwordHash },
+      select: { id: true, username: true, displayName: true, createdAt: true },
     });
   }
 }
