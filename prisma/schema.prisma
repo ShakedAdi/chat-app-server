@@ -4,8 +4,8 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -13,10 +13,44 @@ datasource db {
   provider = "postgresql"
 }
 
+enum MemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum RoomType {
+  DIRECT
+  GROUP
+}
+
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
+  id           String       @id @default(cuid())
+  username     String       @unique
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  memberships  RoomMember[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model RoomMember {
+  id       String     @id @default(cuid())
+  room     Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId   String
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  role     MemberRole @default(MEMBER)
+  joinedAt DateTime   @default(now())
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model Room {
+  id        String       @id @default(cuid())
+  type      RoomType
+  dmKey     String?      @unique // sorted "userIdA:userIdB"; DIRECT rooms only, null for GROUP
+  name      String?
+  members   RoomMember[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
