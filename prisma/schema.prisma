@@ -25,18 +25,21 @@ enum RoomType {
 
 enum MessageType {
   TEXT
-  SYSTEM
+  SYSTEM_ADD_MEMBER
+  SYSTEM_REMOVE_MEMBER
+  SYSTEM_MEMBER_LEAVE
 }
 
 model User {
-  id           String       @id @default(cuid())
-  username     String       @unique
-  displayName  String
-  passwordHash String
-  memberships  RoomMember[]
-  messages     Message[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  username       String       @unique
+  displayName    String
+  passwordHash   String
+  memberships    RoomMember[]
+  actorMessages  Message[]    @relation("MessageActor")
+  targetMessages Message[]    @relation("MessageTarget")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 model RoomMember {
@@ -69,8 +72,10 @@ model Message {
   body      String
   room      Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
   roomId    String
-  sender    User?       @relation(fields: [senderId], references: [id], onDelete: SetNull)
-  senderId  String?
+  actor     User?       @relation("MessageActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actorId   String?
+  target    User?       @relation("MessageTarget", fields: [targetId], references: [id], onDelete: SetNull)
+  targetId  String?
   createdAt DateTime    @default(now())
 
   @@index([roomId, createdAt])
