@@ -69,7 +69,7 @@ model Room {
 model Message {
   id        String      @id @default(cuid())
   type      MessageType @default(TEXT)
-  body      String
+  body      String?
   room      Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
   roomId    String
   actor     User?       @relation("MessageActor", fields: [actorId], references: [id], onDelete: SetNull)
