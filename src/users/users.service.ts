@@ -5,6 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async userExists(userId: string) {
+    const count = await this.prisma.user.count({ where: { id: userId } });
+    return count !== 0;
+  }
+
   findByName(username: string) {
     return this.prisma.user.findUnique({ where: { username } });
   }
