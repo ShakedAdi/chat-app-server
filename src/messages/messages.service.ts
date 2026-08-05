@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessageType } from '../generated/prisma/enums';
+import { Prisma } from '../generated/prisma/client';
 
 @Injectable()
 export class MessagesService {
@@ -26,8 +27,9 @@ export class MessagesService {
     type: MessageType,
     actorId: string,
     targetId?: string,
+    tx?: Prisma.TransactionClient,
   ) {
-    return this.prisma.message.create({
+    return (tx ?? this.prisma).message.create({
       data: {
         type,
         actorId,
@@ -38,29 +40,47 @@ export class MessagesService {
     });
   }
 
-  createAddMemberMessage(roomId: string, actorId: string, targetId: string) {
+  createAddMemberMessage(
+    roomId: string,
+    actorId: string,
+    targetId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.createSystemMessage(
       roomId,
       MessageType.SYSTEM_ADD_MEMBER,
       actorId,
       targetId,
+      tx,
     );
   }
 
-  createRemoveMemberMessage(roomId: string, actorId: string, targetId: string) {
+  createRemoveMemberMessage(
+    roomId: string,
+    actorId: string,
+    targetId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.createSystemMessage(
       roomId,
       MessageType.SYSTEM_REMOVE_MEMBER,
       actorId,
       targetId,
+      tx,
     );
   }
 
-  createMemberLeaveMessage(roomId: string, actorId: string) {
+  createMemberLeaveMessage(
+    roomId: string,
+    actorId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.createSystemMessage(
       roomId,
       MessageType.SYSTEM_MEMBER_LEAVE,
       actorId,
+      undefined,
+      tx,
     );
   }
 }
