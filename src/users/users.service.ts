@@ -1,9 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async idsByUsernames(usernames: string[]) {
+    const unique = [...new Set(usernames)];
+    const users = await this.prisma.user.findMany({
+      where: { username: { in: unique } },
+      select: { id: true, username: true },
+    });
+
+    if (users.length !== unique.length) {
+      const found = new Set(users.map((u) => u.username));
+      const missing = unique.filter((username) => !found.has(username));
+      throw new BadRequestException(`Unknown users: ${missing.join(', ')}`);
+    }
+
+    return users.map((u) => u.id);
+  }
+
+  async idByUsername(username: string) {
+    return (await this.idsByUsernames([username])).at(0);
+  }
 
   async usersExist(userIds: string[]) {
     const unique = [...new Set(userIds)];
