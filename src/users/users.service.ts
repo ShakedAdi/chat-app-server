@@ -5,9 +5,16 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async userExists(userId: string) {
-    const count = await this.prisma.user.count({ where: { id: userId } });
-    return count !== 0;
+  async usersExist(userIds: string[]) {
+    const unique = [...new Set(userIds)];
+    const count = await this.prisma.user.count({
+      where: { id: { in: unique } },
+    });
+    return count === unique.length;
+  }
+
+  userExists(userId: string) {
+    return this.usersExist([userId]);
   }
 
   findByName(username: string) {
