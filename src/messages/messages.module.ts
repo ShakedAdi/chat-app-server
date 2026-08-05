@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MessagesService } from './messages.service';
-import { UsersModule } from '../users/users.module';
+import { RoomMembersModule } from '../room-members/room-members.module';
 
 @Module({
-  imports: [UsersModule],
+  imports: [RoomMembersModule],
   providers: [MessagesService],
   exports: [MessagesService],
 })

@@ -2,19 +2,27 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessageType } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
+import { RoomMembersService } from '../room-members/room-members.service';
 
 @Injectable()
 export class MessagesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly roomMembersService: RoomMembersService,
+  ) {}
 
-  createTextMessage(roomId: string, senderId: string, body: string) {
+  async createTextMessage(roomId: string, senderId: string, body: string) {
+    await this.roomMembersService.requireMembership(roomId, senderId);
+
     return this.prisma.message.create({
-      data: { type: MessageType.TEXT, body, roomId, senderId },
+      data: { type: MessageType.TEXT, body, roomId, actorId: senderId },
       select: { id: true, createdAt: true },
     });
   }
 
-  getLastMessages(roomId: string) {
+  async getLastMessages(roomId: string, userId: string) {
+    await this.roomMembersService.requireMembership(roomId, userId);
+
     return this.prisma.message.findMany({
       where: { roomId },
       orderBy: { createdAt: 'asc' },

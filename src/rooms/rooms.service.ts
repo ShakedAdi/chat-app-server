@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MemberRole, RoomType } from '../generated/prisma/enums';
 import { UsersService } from '../users/users.service';
 import { MessagesService } from '../messages/messages.service';
+import { RoomMembersService } from '../room-members/room-members.service';
 
 @Injectable()
 export class RoomsService {
@@ -16,27 +16,8 @@ export class RoomsService {
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly messagesService: MessagesService,
+    private readonly roomMembersService: RoomMembersService,
   ) {}
-
-  private async requireGroupMembership(roomId: string, userId: string) {
-    const membership = await this.prisma.roomMember.findUnique({
-      where: { roomId_userId: { roomId, userId } },
-      select: { role: true, room: { select: { type: true } } },
-    });
-    if (!membership) throw new NotFoundException('Room not found');
-    if (membership.room.type !== RoomType.GROUP) {
-      throw new BadRequestException('Room is not a group');
-    }
-    return membership;
-  }
-
-  private async requireGroupAdmin(roomId: string, userId: string) {
-    const membership = await this.requireGroupMembership(roomId, userId);
-    if (membership.role !== MemberRole.ADMIN) {
-      throw new ForbiddenException('Only group admins can manage members');
-    }
-    return membership;
-  }
 
   async roomExists(roomId: string) {
     const count = await this.prisma.room.count({ where: { id: roomId } });
@@ -76,13 +57,6 @@ export class RoomsService {
     }
     const others = [...new Set(memberIds)].filter((id) => id !== creatorId);
 
-    const found = await this.prisma.user.count({
-      where: { id: { in: others } },
-    });
-    if (found !== others.length) {
-      throw new BadRequestException('Member list contains unknown users');
-    }
-
     return this.prisma.room.create({
       data: {
         type: RoomType.GROUP,
@@ -99,7 +73,7 @@ export class RoomsService {
   }
 
   async deleteGroup(roomId: string, userId: string) {
-    await this.requireGroupAdmin(roomId, userId);
+    await this.roomMembersService.requireGroupAdmin(roomId, userId);
 
     const { count } = await this.prisma.room.deleteMany({
       where: { id: roomId },
@@ -108,7 +82,7 @@ export class RoomsService {
   }
 
   async addMember(actorId: string, roomId: string, targetId: string) {
-    await this.requireGroupAdmin(roomId, actorId);
+    await this.roomMembersService.requireGroupAdmin(roomId, actorId);
 
     if (!(await this.usersService.userExists(targetId))) {
       throw new BadRequestException('Unknown user');
@@ -135,7 +109,7 @@ export class RoomsService {
   }
 
   async removeMember(actorId: string, roomId: string, targetId: string) {
-    await this.requireGroupAdmin(roomId, actorId);
+    await this.roomMembersService.requireGroupAdmin(roomId, actorId);
 
     if (targetId === actorId) {
       throw new BadRequestException('Use leave group');
@@ -158,7 +132,10 @@ export class RoomsService {
   }
 
   async leaveGroup(meId: string, roomId: string) {
-    const { role } = await this.requireGroupMembership(roomId, meId);
+    const { role } = await this.roomMembersService.requireGroupMembership(
+      roomId,
+      meId,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       await tx.roomMember.delete({
