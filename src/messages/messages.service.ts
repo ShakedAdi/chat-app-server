@@ -27,6 +27,13 @@ export class MessagesService {
       where: { roomId },
       orderBy: { createdAt: 'asc' },
       take: 20,
+      select: {
+        type: true,
+        body: true,
+        createdAt: true,
+        actor: { select: { username: true, displayName: true } },
+        target: { select: { username: true, displayName: true } },
+      },
     });
   }
 
