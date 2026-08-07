@@ -19,19 +19,19 @@ export class RoomsService {
     private readonly roomMembersService: RoomMembersService,
   ) {}
 
-  async roomExists(roomId: string) {
-    const count = await this.prisma.room.count({ where: { id: roomId } });
-    return count !== 0;
-  }
-
   async createDirect(meId: string, otherId: string) {
+    if (meId === otherId) throw new BadRequestException('Cannot DM yourself');
+
     if (!(await this.usersService.usersExist([meId, otherId]))) {
       throw new BadRequestException('One of the users does not exist');
     }
 
     const dmKey = [meId, otherId].sort().join(':');
 
-    const existing = await this.prisma.room.findUnique({ where: { dmKey } });
+    const existing = await this.prisma.room.findUnique({
+      where: { dmKey },
+      select: { id: true, createdAt: true },
+    });
     if (existing) return existing;
 
     return await this.prisma.room.create({
