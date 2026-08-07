@@ -6,6 +6,12 @@ import {
   Param,
   Post,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiNotFoundResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { RoomsService } from './rooms.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
@@ -15,12 +21,15 @@ import { AddMemberDto } from './dto/add-member.dto';
 import { RemoveMemberDto } from './dto/remove-member.dto';
 
 @Controller('rooms')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Missing or invalid token' })
 export class RoomsController {
   constructor(
     private readonly roomsService: RoomsService,
     private readonly usersService: UsersService,
   ) {}
 
+  /** Open (or reuse) the direct room between the caller and another user. */
   @Post('dm/:username')
   async createDirect(
     @CurrentUser() me: JwtPayload,
@@ -35,6 +44,7 @@ export class RoomsController {
   }
 
   @Delete('dm/:username')
+  @ApiNotFoundResponse({ description: 'Direct room not found' })
   async deleteDirect(
     @CurrentUser() me: JwtPayload,
     @Param('username') otherUsername: string,
@@ -59,7 +69,9 @@ export class RoomsController {
     );
   }
 
+  /** Delete a group room the caller owns. */
   @Delete('group/:roomId')
+  @ApiNotFoundResponse({ description: 'Group not found' })
   deleteGroup(
     @CurrentUser() userId: JwtPayload,
     @Param('roomId') roomId: string,
@@ -68,6 +80,8 @@ export class RoomsController {
   }
 
   @Post('group/add-member/:roomId')
+  @ApiNotFoundResponse({ description: 'Group not found' })
+  @ApiConflictResponse({ description: 'User is already a member' })
   async addMember(
     @CurrentUser() userId: JwtPayload,
     @Param('roomId') roomId: string,
@@ -80,7 +94,9 @@ export class RoomsController {
     return this.roomsService.addMember(userId.sub, roomId, targetId);
   }
 
+  /** Remove another user from a group room. Use `leave` to remove yourself. */
   @Post('group/remove-member/:roomId')
+  @ApiNotFoundResponse({ description: 'Group or member not found' })
   async removeMember(
     @CurrentUser() userId: JwtPayload,
     @Param('roomId') roomId: string,
@@ -94,6 +110,7 @@ export class RoomsController {
   }
 
   @Post('group/leave/:roomId')
+  @ApiNotFoundResponse({ description: 'Group not found' })
   async leaveGroup(
     @CurrentUser() userId: JwtPayload,
     @Param('roomId') roomId: string,

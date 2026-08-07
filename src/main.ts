@@ -1,10 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, OpenAPIObject } from '@nestjs/swagger';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { load } from 'js-yaml';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -21,13 +18,20 @@ async function bootstrap() {
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );
 
-  const spec = load(
-    readFileSync(join(process.cwd(), 'openapi.yaml'), 'utf8'),
-  ) as OpenAPIObject;
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Chat App API')
+    .setDescription('Authentication and chat endpoints')
+    .setVersion('1.0.0')
+    .addServer('http://localhost:3000')
+    .addBearerAuth()
+    .build();
 
-  SwaggerModule.setup('docs', app, spec, {
-    swaggerOptions: { persistAuthorization: true },
-  });
+  SwaggerModule.setup(
+    'docs',
+    app,
+    () => SwaggerModule.createDocument(app, swaggerConfig),
+    { swaggerOptions: { persistAuthorization: true } },
+  );
 
   await app.listen(process.env.PORT ?? 3000);
 }
