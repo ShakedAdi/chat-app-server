@@ -4,6 +4,7 @@ import { MessagesService } from './messages.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
 import { NewMessageDto } from './dto/new-message.dto';
+import { LastMessagesDto } from './dto/last-messages.dto';
 
 @Controller('messages')
 @ApiBearerAuth()
@@ -21,6 +22,20 @@ export class MessagesController {
       roomId,
       senderId.sub,
       dto.text,
+    );
+  }
+
+  @Post('last-messages/:roomId')
+  getLastMessages(
+    @CurrentUser() userId: JwtPayload,
+    @Param('roomId') roomId: string,
+    @Body() dto: LastMessagesDto,
+  ) {
+    return this.messagesService.getLastMessages(
+      roomId,
+      userId.sub,
+      dto.amount,
+      dto.offset,
     );
   }
 }

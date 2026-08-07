@@ -20,13 +20,19 @@ export class MessagesService {
     });
   }
 
-  async getLastMessages(roomId: string, userId: string, amount: number) {
+  async getLastMessages(
+    roomId: string,
+    userId: string,
+    amount: number,
+    offset: number,
+  ) {
     await this.roomMembersService.requireMembership(roomId, userId);
 
     return this.prisma.message.findMany({
       where: { roomId },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: amount,
+      skip: offset,
       select: {
         id: true,
         type: true,
