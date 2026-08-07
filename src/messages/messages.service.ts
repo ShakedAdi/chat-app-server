@@ -20,19 +20,20 @@ export class MessagesService {
     });
   }
 
-  async getLastMessages(roomId: string, userId: string) {
+  async getLastMessages(roomId: string, userId: string, amount: number) {
     await this.roomMembersService.requireMembership(roomId, userId);
 
     return this.prisma.message.findMany({
       where: { roomId },
-      orderBy: { createdAt: 'asc' },
-      take: 20,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: amount,
       select: {
+        id: true,
         type: true,
         body: true,
         createdAt: true,
-        actor: { select: { username: true, displayName: true } },
-        target: { select: { username: true, displayName: true } },
+        actor: { select: { id: true, username: true, displayName: true } },
+        target: { select: { id: true, username: true, displayName: true } },
       },
     });
   }
