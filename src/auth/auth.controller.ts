@@ -70,6 +70,13 @@ export class AuthController {
     return { username: dto.username };
   }
 
+  @Public()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('access_token', { path: '/', sameSite: 'lax' });
+  }
+
   @Get('profile')
   @ApiBearerAuth()
   @ApiOkResponse({ type: JwtPayloadDto })
