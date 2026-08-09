@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Res,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -21,17 +22,35 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtPayloadDto } from './dto/jwt-payload.dto';
 import type { JwtPayload } from './types/jwt-payload.type';
 import { Public } from './decorators/public.decorator';
+import type { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  private setAuthCookie(res: Response, token: string) {
+    res.cookie('access_token', token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000,
+      path: '/',
+    });
+  }
+
   @Public()
   @Post('signup')
   @ApiCreatedResponse({ type: AuthResponseDto, description: 'Account created' })
   @ApiConflictResponse({ description: 'Username already taken' })
-  signUp(@Body() dto: SignUpDto) {
-    return this.authService.signUp(dto.username, dto.password);
+  async signUp(
+    @Body() dto: SignUpDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken } = await this.authService.signUp(
+      dto.username,
+      dto.password,
+    );
+    this.setAuthCookie(res, accessToken);
+    return { username: dto.username };
   }
 
   @Public()
@@ -39,8 +58,16 @@ export class AuthController {
   @Post('signin')
   @ApiOkResponse({ type: AuthResponseDto, description: 'Authenticated' })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  signIn(@Body() dto: SignInDto) {
-    return this.authService.signIn(dto.username, dto.password);
+  async signIn(
+    @Body() dto: SignInDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken } = await this.authService.signIn(
+      dto.username,
+      dto.password,
+    );
+    this.setAuthCookie(res, accessToken);
+    return { username: dto.username };
   }
 
   @Get('profile')
