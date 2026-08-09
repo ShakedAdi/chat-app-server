@@ -1,7 +1,7 @@
 export class AuthResponseDto {
   /**
-   * Signed JWT to send as `Authorization: Bearer <token>`
-   * @example 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+   * The user's username
+   * @example shakedu
    */
-  readonly accessToken: string;
+  readonly username: string;
 }
