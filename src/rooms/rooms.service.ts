@@ -190,7 +190,9 @@ export class RoomsService {
 
       return {
         ...room,
-        name: isDirect ? (other?.displayName ?? 'Unknown user') : room.name,
+        name: isDirect
+          ? (other?.displayName ?? 'Unknown user')
+          : (room.name ?? 'Unnamed group'),
       };
     });
   }
