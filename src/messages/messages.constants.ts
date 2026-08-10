@@ -1,0 +1,2 @@
+export const DEFAULT_MESSAGE_PAGE_SIZE = 20;
+export const MAX_MESSAGE_PAGE_SIZE = 100;

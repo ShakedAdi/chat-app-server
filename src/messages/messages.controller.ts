@@ -1,10 +1,22 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
 import { NewMessageDto } from './dto/new-message.dto';
-import { LastMessagesDto } from './dto/last-messages.dto';
+import {
+  DEFAULT_MESSAGE_PAGE_SIZE,
+  MAX_MESSAGE_PAGE_SIZE,
+} from './messages.constants';
 
 @Controller('messages')
 @ApiBearerAuth()
@@ -25,17 +37,23 @@ export class MessagesController {
     );
   }
 
-  @Post('last-messages/:roomId')
+  @Get(':roomId')
   getLastMessages(
-    @CurrentUser() userId: JwtPayload,
+    @CurrentUser() me: JwtPayload,
     @Param('roomId') roomId: string,
-    @Body() dto: LastMessagesDto,
+    @Query(
+      'amount',
+      new DefaultValuePipe(DEFAULT_MESSAGE_PAGE_SIZE),
+      ParseIntPipe,
+    )
+    amount: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
   ) {
     return this.messagesService.getLastMessages(
       roomId,
-      userId.sub,
-      dto.amount,
-      dto.offset,
+      me.sub,
+      Math.min(Math.max(amount, 1), MAX_MESSAGE_PAGE_SIZE),
+      Math.max(offset, 0),
     );
   }
 }
