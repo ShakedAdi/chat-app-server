@@ -168,6 +168,33 @@ export class RoomsService {
     });
   }
 
+  async getRooms(userId: string) {
+    const rooms = await this.prisma.room.findMany({
+      where: { members: { some: { userId } } },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        members: {
+          where: { userId: { not: userId } },
+          select: { user: { select: { username: true, displayName: true } } },
+          take: 1,
+        },
+      },
+    });
+
+    return rooms.map(({ members, ...room }) => {
+      const isDirect = room.type === RoomType.DIRECT;
+      const other = members.at(0)?.user;
+
+      return {
+        ...room,
+        name: isDirect ? (other?.displayName ?? 'Unknown user') : room.name,
+      };
+    });
+  }
+
   getMembers(roomId: string) {
     return this.prisma.roomMember.findMany({ where: { roomId } });
   }

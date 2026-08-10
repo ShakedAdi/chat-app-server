@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Param,
   Post,
 } from '@nestjs/common';
@@ -10,8 +11,10 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { RoomSummaryDto } from './dto/room-summary.dto';
 import { RoomsService } from './rooms.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
@@ -29,7 +32,6 @@ export class RoomsController {
     private readonly usersService: UsersService,
   ) {}
 
-  /** Open (or reuse) the direct room between the caller and another user. */
   @Post('dm/:username')
   async createDirect(
     @CurrentUser() me: JwtPayload,
@@ -69,7 +71,6 @@ export class RoomsController {
     );
   }
 
-  /** Delete a group room the caller owns. */
   @Delete('group/:roomId')
   @ApiNotFoundResponse({ description: 'Group not found' })
   deleteGroup(
@@ -94,7 +95,6 @@ export class RoomsController {
     return this.roomsService.addMember(userId.sub, roomId, targetId);
   }
 
-  /** Remove another user from a group room. Use `leave` to remove yourself. */
   @Post('group/remove-member/:roomId')
   @ApiNotFoundResponse({ description: 'Group or member not found' })
   async removeMember(
@@ -116,5 +116,11 @@ export class RoomsController {
     @Param('roomId') roomId: string,
   ) {
     return this.roomsService.leaveGroup(userId.sub, roomId);
+  }
+
+  @Get()
+  @ApiOkResponse({ type: [RoomSummaryDto] })
+  getRooms(@CurrentUser() me: JwtPayload) {
+    return this.roomsService.getRooms(me.sub);
   }
 }
