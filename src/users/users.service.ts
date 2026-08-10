@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MAX_USER_SEARCH_RESULTS } from './users.constants';
 
 @Injectable()
 export class UsersService {
@@ -49,6 +50,22 @@ export class UsersService {
     return this.prisma.user.create({
       data: { username, displayName: username, passwordHash },
       select: { id: true, username: true },
+    });
+  }
+
+  findUsers(
+    key: string,
+    excludeUserId?: string,
+    limit = MAX_USER_SEARCH_RESULTS,
+  ) {
+    return this.prisma.user.findMany({
+      where: {
+        username: { contains: key, mode: 'insensitive' },
+        ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
+      },
+      orderBy: { username: 'asc' },
+      take: limit,
+      select: { username: true, displayName: true },
     });
   }
 }
