@@ -206,6 +206,7 @@ export class RoomsService {
         id: true,
         type: true,
         name: true,
+        createdAt: true,
         members: {
           select: {
             userId: true,
