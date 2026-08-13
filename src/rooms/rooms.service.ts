@@ -197,7 +197,34 @@ export class RoomsService {
     });
   }
 
-  getMembers(roomId: string) {
-    return this.prisma.roomMember.findMany({ where: { roomId } });
+  async getRoomDetails(userId: string, roomId: string) {
+    await this.roomMembersService.requireMembership(roomId, userId);
+
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        members: {
+          select: {
+            userId: true,
+            role: true,
+            user: { select: { username: true, displayName: true } },
+          },
+        },
+      },
+    });
+    if (!room) throw new NotFoundException('Room not found');
+
+    const other = room.members.find((m) => m.userId !== userId)?.user;
+
+    return {
+      ...room,
+      name:
+        room.type === RoomType.DIRECT
+          ? (other?.displayName ?? 'Unknown user')
+          : (room.name ?? 'Unnamed group'),
+    };
   }
 }

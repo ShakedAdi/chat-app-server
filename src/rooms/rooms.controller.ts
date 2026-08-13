@@ -32,6 +32,14 @@ export class RoomsController {
     private readonly usersService: UsersService,
   ) {}
 
+  @Get('details/:roomId')
+  async getRoomDetails(
+    @CurrentUser() me: JwtPayload,
+    @Param('roomId') roomId: string,
+  ) {
+    return this.roomsService.getRoomDetails(me.sub, roomId);
+  }
+
   @Post('dm/:username')
   async createDirect(
     @CurrentUser() me: JwtPayload,
