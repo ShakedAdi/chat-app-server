@@ -12,9 +12,7 @@ export class JwtPayloadDto implements JwtPayload {
    */
   readonly username: string;
 
-  /** Issued-at, seconds since epoch */
   readonly iat: number;
 
-  /** Expiry, seconds since epoch */
   readonly exp: number;
 }
