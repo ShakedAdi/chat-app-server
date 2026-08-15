@@ -23,7 +23,8 @@ type AuthedSocket = Socket<
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:5173',
+    origin: (_origin, callback) =>
+      callback(null, process.env.ALLOWED_ORIGIN ?? 'http://localhost:5173'),
     credentials: true,
   },
 })
@@ -49,8 +50,6 @@ export class MyGateway implements OnGatewayConnection {
       client.disconnect();
       return;
     }
-
-    console.log(`${client.data.user.username} connected (${client.id})`);
   }
 
   @SubscribeMessage('joinRoom')
@@ -71,19 +70,6 @@ export class MyGateway implements OnGatewayConnection {
     @ConnectedSocket() client: AuthedSocket,
   ) {
     await client.leave(roomId);
-  }
-
-  @SubscribeMessage('newMessage')
-  async onNewMessage(
-    @MessageBody() body: { roomId: string; text: string },
-    @ConnectedSocket() client: AuthedSocket,
-  ) {
-    await this.roomMembersService.requireMembership(
-      body.roomId,
-      client.data.user.sub,
-    );
-    console.log(body);
-    this.server.to(body.roomId).emit('onMessage', 'new message sent');
   }
 
   private extractToken(client: AuthedSocket): string | undefined {

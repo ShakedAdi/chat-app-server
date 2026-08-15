@@ -5,5 +5,6 @@ import { RoomMembersModule } from '../room-members/room-members.module';
 @Module({
   imports: [RoomMembersModule],
   providers: [MyGateway],
+  exports: [MyGateway],
 })
 export class GatewayModule {}

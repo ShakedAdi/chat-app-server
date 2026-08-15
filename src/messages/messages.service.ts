@@ -3,21 +3,34 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MessageType } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
 import { RoomMembersService } from '../room-members/room-members.service';
+import { MyGateway } from '../gateway/gateway';
 
 @Injectable()
 export class MessagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly roomMembersService: RoomMembersService,
+    private readonly gateway: MyGateway,
   ) {}
 
   async createTextMessage(roomId: string, senderId: string, body: string) {
     await this.roomMembersService.requireMembership(roomId, senderId);
 
-    return this.prisma.message.create({
+    const message = await this.prisma.message.create({
       data: { type: MessageType.TEXT, body, roomId, actorId: senderId },
-      select: { id: true, createdAt: true },
+      select: {
+        id: true,
+        type: true,
+        body: true,
+        createdAt: true,
+        actor: { select: { id: true, username: true, displayName: true } },
+        target: { select: { id: true, username: true, displayName: true } },
+      },
     });
+
+    this.gateway.server.to(roomId).emit('onMessage', message);
+
+    return message;
   }
 
   async getLastMessages(
