@@ -57,22 +57,33 @@ export class MessagesService {
     });
   }
 
-  private createSystemMessage(
+  private async createSystemMessage(
     roomId: string,
     type: MessageType,
     actorId: string,
     targetId?: string,
     tx?: Prisma.TransactionClient,
   ) {
-    return (tx ?? this.prisma).message.create({
+    const message = await (tx ?? this.prisma).message.create({
       data: {
         type,
         actorId,
         roomId,
         ...(type !== MessageType.SYSTEM_MEMBER_LEAVE && { targetId }),
       },
-      select: { id: true, createdAt: true },
+      select: {
+        id: true,
+        type: true,
+        body: true,
+        createdAt: true,
+        actor: { select: { id: true, username: true, displayName: true } },
+        target: { select: { id: true, username: true, displayName: true } },
+      },
     });
+
+    this.gateway.server.to(roomId).emit('onMessage', message);
+
+    return message;
   }
 
   createAddMemberMessage(
